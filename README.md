@@ -28,6 +28,14 @@ A modular ASP.NET Core solution with MVC + API for managing users and products. 
 - __Admin__: Full access across the system (Users and Products modules).
 - __Manager__: Full access to Products module (create, update, delete, view). No access to Users API.
 
+## Default Login Accounts
+- __Admin__
+  - Email: `admin@example.com`
+  - Password: `Admin@12345`
+- __Manager__
+  - Email: `manager@example.com`
+  - Password: `Manager@12345`
+
 ## Project Structure
 ```
 Management.sln
