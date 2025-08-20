@@ -1,0 +1,32 @@
+@model Model.Dtos.UserDto
+@{
+    ViewData["Title"] = "User Details";
+}
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0">User Details</h2>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+            <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+        </div>
+    </div>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <div class="text-muted small">Email</div>
+                    <div class="fs-5">@Model.Email</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-muted small">Username</div>
+                    <div class="fs-5">@Model.UserName</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-muted small">Phone</div>
+                    <div class="fs-5">@Model.PhoneNumber</div>
+                </div>
+                @* User Id intentionally hidden from UI *@
+            </div>
+        </div>
+    </div>
+</div>

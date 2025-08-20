@@ -1,0 +1,202 @@
+@model IReadOnlyList<Model.Dtos.UserDto>
+@{
+    ViewData["Title"] = "Users";
+}
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0">Users</h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Create User
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body position-relative">
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-md-6">
+                    <input id="userSearch" type="text" class="form-control" placeholder="Search by email, username or phone..." />
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="usersTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th data-sort="text" class="th-sortable"><span>Email</span><i class="bi bi-arrow-down-up sort-icon ms-1"></i></th>
+                            <th data-sort="text" class="th-sortable"><span>Username</span><i class="bi bi-arrow-down-up sort-icon ms-1"></i></th>
+                            <th data-sort="text" class="th-sortable"><span>Phone</span><i class="bi bi-arrow-down-up sort-icon ms-1"></i></th>
+                            <th style="width: 180px;" class="text-end"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model == null || !Model.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No users found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var u in Model)
+                        {
+                            <tr data-email="@u.Email" data-username="@u.UserName" data-phone="@u.PhoneNumber">
+                                <td>
+                                    <div class="fw-semibold">@u.Email</div>
+                                </td>
+                                <td>@u.UserName</td>
+                                <td>@u.PhoneNumber</td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a asp-action="Details" asp-route-id="@u.Id" class="btn btn-outline-secondary" title="Details" aria-label="Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-outline-primary" title="Edit" aria-label="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@u.Id" class="btn btn-outline-danger" title="Delete" aria-label="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center pt-3">
+                <div class="text-muted small" id="userRowsInfo"></div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="userPager"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Row enter/leave animations (disabled for now)
+    .fade-row { transition: opacity .22s ease, transform .22s ease; }
+    .row-enter { opacity: 0; transform: translateY(6px); }
+    .row-enter-active { opacity: 1; transform: translateY(0); }
+    .row-leave { opacity: 1; transform: translateY(0); }
+    .row-leave-active { opacity: 0; transform: translateY(-6px); }
+    */
+</style>
+
+@section Scripts {
+    <script>
+        (function(){
+            const table = document.getElementById('usersTable');
+            const tbody = table.querySelector('tbody');
+            const allRows = Array.from(tbody.querySelectorAll('tr')).filter(r => r.querySelector('td'));
+            const search = document.getElementById('userSearch');
+            const pager = document.getElementById('userPager');
+            const info = document.getElementById('userRowsInfo');
+            let sortKey = null, sortDir = 1; // 1 asc, -1 desc
+            const pageSize = 10;
+            let page = 1;
+
+            function text(r){
+                return ((r.dataset.email||'') + ' ' + (r.dataset.username||'') + ' ' + (r.dataset.phone||'')).toLowerCase();
+            }
+            function matches(r){
+                const q = (search.value||'').toLowerCase().trim();
+                if (q && !text(r).includes(q)) return false;
+                return true;
+            }
+            function sortRows(list){
+                if (!sortKey) return list;
+                const getVal = (r) => (sortKey==='email') ? (r.dataset.email||'') : (sortKey==='username') ? (r.dataset.username||'') : (r.dataset.phone||'');
+                return list.slice().sort((a,b)=>{
+                    const av=getVal(a), bv=getVal(b);
+                    if (av<bv) return -1*sortDir; if (av>bv) return 1*sortDir; return 0;
+                });
+            }
+            function sanitizeRow(r){
+                r.classList.remove('fade-row','row-enter','row-enter-active','row-leave','row-leave-active');
+            }
+            function animateSwap(newRows){
+                const current = Array.from(tbody.children);
+                if (current.length){
+                    current.forEach(r=>{ r.classList.add('fade-row','row-leave'); });
+                    void tbody.offsetWidth; // reflow
+                    current.forEach(r=> r.classList.add('row-leave-active'));
+                    setTimeout(()=>{
+                        tbody.innerHTML = '';
+                        newRows.forEach(r=>{
+                            sanitizeRow(r);
+                            r.classList.add('fade-row','row-enter');
+                            tbody.appendChild(r);
+                            void r.offsetWidth;
+                            r.classList.add('row-enter-active');
+                            setTimeout(()=> r.classList.remove('fade-row','row-enter','row-enter-active'), 240);
+                        });
+                    }, 180);
+                } else {
+                    tbody.innerHTML = '';
+                    newRows.forEach(r=>{
+                        sanitizeRow(r);
+                        r.classList.add('fade-row','row-enter');
+                        tbody.appendChild(r);
+                        void r.offsetWidth;
+                        r.classList.add('row-enter-active');
+                        setTimeout(()=> r.classList.remove('fade-row','row-enter','row-enter-active'), 240);
+                    });
+                }
+            }
+
+            function render(){
+                const filtered = allRows.filter(matches);
+                const sorted = sortRows(filtered);
+                const total = sorted.length;
+                const pages = Math.max(1, Math.ceil(total/pageSize));
+                if (page>pages) page=pages;
+                const start=(page-1)*pageSize, end=start+pageSize;
+                const pageRows = sorted.slice(start,end);
+                // animation disabled: direct replace
+                tbody.innerHTML = '';
+                pageRows.forEach(r=>tbody.appendChild(r));
+                info.textContent = total?`Showing ${start+1}-${Math.min(end,total)} of ${total}`:'No results';
+                pager.innerHTML = '';
+                for(let i=1;i<=pages;i++){
+                    const li=document.createElement('li');
+                    li.className='page-item'+(i===page?' active':'');
+                    li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                    li.addEventListener('click', (e)=>{ e.preventDefault(); page=i; render(); });
+                    pager.appendChild(li);
+                }
+            }
+            // debounce utility for search
+            function debounce(fn, delay){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(null,args), delay); }; }
+            const debouncedUserSearch = debounce(()=>{ page=1; render(); }, 250);
+            search.addEventListener('input', debouncedUserSearch);
+            const sortableHeaders = table.querySelectorAll('th[data-sort]');
+            sortableHeaders.forEach((th, idx)=>{
+                const map=['email','username','phone'];
+                th.style.cursor='pointer';
+                th.addEventListener('click', ()=>{
+                    const key = map[idx];
+                    if (sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=1; }
+
+                    // update icon states
+                    sortableHeaders.forEach(h=>{
+                        h.classList.remove('sorted-asc','sorted-desc');
+                        const icon=h.querySelector('.sort-icon');
+                        if(icon){ icon.classList.remove('bi-caret-up-fill','bi-caret-down-fill'); icon.classList.add('bi-arrow-down-up'); }
+                    });
+                    const icon=th.querySelector('.sort-icon');
+                    if(icon){
+                        icon.classList.remove('bi-arrow-down-up');
+                        if (sortDir===1){ th.classList.add('sorted-asc'); icon.classList.add('bi-caret-up-fill'); }
+                        else { th.classList.add('sorted-desc'); icon.classList.add('bi-caret-down-fill'); }
+                    }
+
+                    render();
+                });
+            });
+            // initialize default icon state
+            sortableHeaders.forEach(h=>h.classList.remove('sorted-asc','sorted-desc'));
+            render();
+        })();
+    </script>
+}

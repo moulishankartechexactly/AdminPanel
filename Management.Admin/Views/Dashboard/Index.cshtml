@@ -1,0 +1,125 @@
+@model Management.Admin.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h1 class="mb-0">Dashboard</h1>
+        <span class="text-muted">Last updated: @DateTime.Now.ToString("g")</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card h-100 shadow-sm border-0" style="background: linear-gradient(135deg, #4e73df, #224abe); color: #fff;">
+                <div class="card-body">
+                    <div class="text-uppercase small opacity-75">Total Users</div>
+                    <div class="display-5 fw-semibold">@Model.TotalUsers</div>
+                    <div class="opacity-75">All registered users</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card h-100 shadow-sm border-0" style="background: linear-gradient(135deg, #1cc88a, #0f9d69); color: #fff;">
+                <div class="card-body">
+                    <div class="text-uppercase small opacity-75">Total Products</div>
+                    <div class="display-5 fw-semibold">@Model.TotalProducts</div>
+                    <div class="opacity-75">Catalog size</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card h-100 shadow-sm border-0" style="background: linear-gradient(135deg, #f6c23e, #c69510); color: #212529;">
+                <div class="card-body">
+                    <div class="text-uppercase small opacity-75">Low Stock (&lt; 10)</div>
+                    <div class="display-5 fw-semibold">@Model.LowStockProducts</div>
+                    <div class="opacity-75">Restock recommended</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <h5 class="card-title mb-0">Products per Category</h5>
+                <div class="btn-group" role="group" aria-label="Chart type">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-chart-type="bar">Bar</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-chart-type="pie">Pie</button>
+                </div>
+            </div>
+
+            @if (Model.ProductsPerCategory == null || !Model.ProductsPerCategory.Any())
+            {
+                <div class="alert alert-info mb-0">No product categories to display.</div>
+            }
+            else
+            {
+                <div class="ratio ratio-21x9">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function () {
+            const data = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProductsPerCategory));
+            const labels = Object.keys(data || {});
+            const values = Object.values(data || {});
+
+            if (!labels.length) return;
+
+            function palette(n) {
+                const base = [
+                    '#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f',
+                    '#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ab'
+                ];
+                const arr = [];
+                for (let i = 0; i < n; i++) arr.push(base[i % base.length]);
+                return arr;
+            }
+
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            let chartType = 'bar';
+            let chart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Products',
+                        data: values,
+                        backgroundColor: palette(values.length).map(c => chartType === 'bar' ? c + '80' : c),
+                        borderColor: palette(values.length),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: chartType !== 'bar' } },
+                    scales: chartType === 'bar' ? { y: { beginAtZero: true, ticks: { precision: 0 } } } : {}
+                }
+            });
+
+            document.querySelectorAll('[data-chart-type]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.getAttribute('data-chart-type');
+                    if (type === chartType) return;
+                    chartType = type;
+                    chart.destroy();
+                    chart = new Chart(ctx, {
+                        type: chartType,
+                        data: chart.data,
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: chartType !== 'bar' } },
+                            scales: chartType === 'bar' ? { y: { beginAtZero: true, ticks: { precision: 0 } } } : {}
+                        }
+                    });
+                });
+            });
+        })();
+    </script>
+}

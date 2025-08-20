@@ -1,0 +1,332 @@
+@model IReadOnlyList<Model.Dtos.ProductDto>
+@{
+    ViewData["Title"] = "Products";
+}
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0">Products</h2>
+        <div class="d-flex gap-2">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Create Product
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body position-relative">
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-md-6">
+                    <input type="text" id="searchBox" class="form-control" placeholder="Search by name, category or description..." />
+                </div>
+                <div class="col-6 col-md-3">
+                    <select id="categoryFilter" class="form-select">
+                        <option value="">All categories</option>
+                        @foreach (var cat in (Model ?? new List<Model.Dtos.ProductDto>()).Select(x => x.Category).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().OrderBy(c => c))
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-md-3 form-check d-flex align-items-center">
+                    <input class="form-check-input me-2" type="checkbox" value="1" id="lowStockOnly">
+                    <label class="form-check-label" for="lowStockOnly">Low stock only (&lt; 10)</label>
+                </div>
+            </div>
+            <div class="table-responsive table-fade">
+                <table class="table table-hover align-middle mb-0" id="productsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:60px;">Image</th>
+                            <th data-sort="text" class="th-sortable"><span>Name</span><i class="bi bi-arrow-down-up sort-icon ms-1"></i></th>
+                            <th data-sort="text" class="th-sortable" style="width: 180px;"><span>Category</span><i class="bi bi-arrow-down-up sort-icon ms-1"></i></th>
+                            <th class="text-end th-sortable" data-sort="num"><span>Price</span><i class="bi bi-arrow-down-up sort-icon ms-1"></i></th>
+                            <th class="text-end th-sortable" data-sort="num" style="width: 120px;"><span>Stock</span><i class="bi bi-arrow-down-up sort-icon ms-1"></i></th>
+                            <th style="width: 180px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model == null || !Model.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No products found.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var p in Model)
+                            {
+                                var low = p.StockQuantity < 10;
+                                <tr class="@(low ? "table-warning" : "")" data-name="@p.Name" data-category="@p.Category" data-desc="@p.Description" data-stock="@p.StockQuantity" data-price="@p.Price">
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                                        {
+                                            <img src="@p.ImageUrl" alt="@p.Name" class="product-thumb" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@p.Name</div>
+                                        <div class="text-muted small product-desc">@p.Description</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge rounded-pill text-bg-secondary" style="color: black;">@p.Category</span>
+                                    </td>
+                                    <td class="text-end">@p.Price.ToString("C")</td>
+                                    <td class="text-end">@p.StockQuantity</td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-outline-secondary" title="Details" aria-label="Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-outline-primary" title="Edit" aria-label="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@p.Id" class="btn btn-outline-danger" title="Delete" aria-label="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center pt-3">
+                <div class="text-muted small" id="rowsInfo"></div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="pager"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .product-thumb {
+        width: 48px;
+        height: 48px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: zoom-in;
+    }
+
+    .img-hover-preview {
+        position: fixed;
+        display: none;
+        pointer-events: none;
+        z-index: 1055;
+        border: 1px solid rgba(0,0,0,.15);
+        background: #fff;
+        padding: 4px;
+        border-radius: 6px;
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+    }
+
+        .img-hover-preview img {
+            max-width: 260px;
+            max-height: 260px;
+            object-fit: contain;
+            display: block;
+        }
+
+    /* Row enter/leave animations (disabled for now)
+        .fade-row { transition: opacity .22s ease, transform .22s ease; }
+        .row-enter { opacity: 0; transform: translateY(6px); }
+        .row-enter-active { opacity: 1; transform: translateY(0); }
+        .row-leave { opacity: 1; transform: translateY(0); }
+        .row-leave-active { opacity: 0; transform: translateY(-6px); }
+        */
+</style>
+
+@section Scripts {
+    <script>
+        (function(){
+            // Hover preview near cursor
+            const preview = (function(){
+                const el = document.createElement('div');
+                el.className = 'img-hover-preview';
+                const img = document.createElement('img');
+                el.appendChild(img);
+                document.body.appendChild(el);
+                function show(src, x, y){ img.src = src; el.style.display = 'block'; position(x,y); }
+                function hide(){ el.style.display = 'none'; img.removeAttribute('src'); }
+                function position(x,y){
+                    const pad = 16, vw = window.innerWidth, vh = window.innerHeight;
+                    const rect = el.getBoundingClientRect();
+                    let left = x + pad, top = y + pad;
+                    if (left + rect.width > vw) left = x - rect.width - pad;
+                    if (top + rect.height > vh) top = y - rect.height - pad;
+                    el.style.left = left + 'px'; el.style.top = top + 'px';
+                }
+                return { el, show, hide, position };
+            })();
+
+            function wireThumb(t){
+                if (!t) return;
+                let active = false;
+                t.addEventListener('mouseenter', (e)=>{
+                    const src = t.getAttribute('src');
+                    if (!src) return;
+                    active = true;
+                    preview.show(src, e.clientX, e.clientY);
+                });
+                t.addEventListener('mousemove', (e)=>{ if (active) preview.position(e.clientX, e.clientY); });
+                t.addEventListener('mouseleave', ()=>{ active=false; preview.hide(); });
+                // Click to open modal
+                t.addEventListener('click', ()=>{
+                    const src = t.getAttribute('src');
+                    const name = t.getAttribute('alt') || 'Image';
+                    const img = document.getElementById('modalLargeImg');
+                    const title = document.getElementById('imageModalLabel');
+                    if (img && title){ img.src = src; title.textContent = name; }
+                    const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+                    modal.show();
+                });
+            }
+
+            document.querySelectorAll('.product-thumb').forEach(wireThumb);
+
+            const table = document.getElementById('productsTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr')).filter(r => r.querySelector('td'));
+            //console.log(rows,Array.from(tbody.querySelectorAll('tr')));
+            const search = document.getElementById('searchBox');
+            const category = document.getElementById('categoryFilter');
+            const lowOnly = document.getElementById('lowStockOnly');
+            const pager = document.getElementById('pager');
+            const rowsInfo = document.getElementById('rowsInfo');
+            let sortKey = null, sortDir = 1; // 1 asc, -1 desc
+            const pageSize = 10;
+            let page = 1;
+
+            function text(r){
+                return (r.dataset.name + ' ' + (r.dataset.category||'') + ' ' + (r.dataset.desc||'')).toLowerCase();
+            }
+            function passes(r){
+                const q = (search.value||'').toLowerCase().trim();
+                const cat = category.value;
+                const low = lowOnly.checked;
+                if (q && !text(r).includes(q)) return false;
+                if (cat && (r.dataset.category||'') !== cat) return false;
+                if (low && Number(r.dataset.stock||'0') >= 10) return false;
+                return true;
+            }
+            function sortRows(list){
+                if (!sortKey) return list;
+                const getVal = (r) => sortKey === 'name' ? (r.dataset.name||'')
+                                  : sortKey === 'category' ? (r.dataset.category||'')
+                                  : sortKey === 'price' ? Number(r.dataset.price||'0')
+                                  : Number(r.dataset.stock||'0');
+                return list.slice().sort((a,b)=>{
+                    const av=getVal(a), bv=getVal(b);
+                    if (av<bv) return -1*sortDir; if (av>bv) return 1*sortDir; return 0;
+                });
+            }
+            function sanitizeRow(r){
+                r.classList.remove('fade-row','row-enter','row-enter-active','row-leave','row-leave-active');
+            }
+            function animateSwap(newRows){
+                const current = Array.from(tbody.children);
+                if (current.length){
+                    current.forEach(r=>{ r.classList.add('fade-row','row-leave'); });
+                    void tbody.offsetWidth; // reflow
+                    current.forEach(r=> r.classList.add('row-leave-active'));
+                    setTimeout(()=>{
+                        tbody.innerHTML = '';
+                        newRows.forEach(r=>{
+                            sanitizeRow(r);
+                            r.classList.add('fade-row','row-enter');
+                            tbody.appendChild(r);
+                            void r.offsetWidth;
+                            r.classList.add('row-enter-active');
+                            setTimeout(()=> r.classList.remove('fade-row','row-enter','row-enter-active'), 240);
+                        });
+                    }, 180);
+                } else {
+                    tbody.innerHTML = '';
+                    newRows.forEach(r=>{
+                        sanitizeRow(r);
+                        r.classList.add('fade-row','row-enter');
+                        tbody.appendChild(r);
+                        void r.offsetWidth;
+                        r.classList.add('row-enter-active');
+                        setTimeout(()=> r.classList.remove('fade-row','row-enter','row-enter-active'), 240);
+                    });
+                }
+            }
+            function render(){
+                const filtered = rows.filter(passes);
+                const sorted = sortRows(filtered);
+                const total = sorted.length;
+                const pages = Math.max(1, Math.ceil(total/pageSize));
+                if (page>pages) page=pages;
+                const start=(page-1)*pageSize, end=start+pageSize;
+                const pageRows = sorted.slice(start,end);
+                // animation disabled: direct replace
+                tbody.innerHTML = '';
+                pageRows.forEach(r=>tbody.appendChild(r));
+                rowsInfo.textContent = total?`Showing ${start+1}-${Math.min(end,total)} of ${total}`:'No results';
+                pager.innerHTML = '';
+                for(let i=1;i<=pages;i++){
+                    const li=document.createElement('li');
+                    li.className='page-item'+(i===page?' active':'');
+                    li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                    li.addEventListener('click', (e)=>{ e.preventDefault(); page=i; render(); });
+                    pager.appendChild(li);
+                }
+            }
+            // debounce utility
+            function debounce(fn, delay){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(null,args), delay); }; }
+            const debouncedSearch = debounce(()=>{ page=1; render(); }, 250);
+            search.addEventListener('input', debouncedSearch);
+            category.addEventListener('change', ()=>{ page=1; render(); });
+            lowOnly.addEventListener('change', ()=>{ page=1; render(); });
+            const sortableHeaders = table.querySelectorAll('th[data-sort]');
+            sortableHeaders.forEach((th,idx)=>{
+                th.style.cursor='pointer';
+                th.addEventListener('click', ()=>{
+                    const keyMap=['name','category','price','stock'];
+                    const key = keyMap[idx];
+                    if (sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=1; }
+
+                    // update icon state
+                    sortableHeaders.forEach(h=>{
+                        h.classList.remove('sorted-asc','sorted-desc');
+                        const icon=h.querySelector('.sort-icon');
+                        if(icon){ icon.classList.remove('bi-caret-up-fill','bi-caret-down-fill'); icon.classList.add('bi-arrow-down-up'); }
+                    });
+                    const icon=th.querySelector('.sort-icon');
+                    if(icon){
+                        icon.classList.remove('bi-arrow-down-up');
+                        if (sortDir===1){ th.classList.add('sorted-asc'); icon.classList.add('bi-caret-up-fill'); }
+                        else { th.classList.add('sorted-desc'); icon.classList.add('bi-caret-down-fill'); }
+                    }
+
+                    render();
+                });
+            });
+            // initialize default icon state (no sort active)
+            sortableHeaders.forEach(h=>h.classList.remove('sorted-asc','sorted-desc'));
+            render();
+        })();
+    </script>
+}
+
+<!-- Modal for large image preview -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalLargeImg" src="" alt="Preview" class="img-fluid" style="max-height:70vh; object-fit:contain;" />
+            </div>
+        </div>
+    </div>
+</div>

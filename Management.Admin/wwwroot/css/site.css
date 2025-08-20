@@ -1,0 +1,63 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+/* Toast theme overrides */
+.toast.text-bg-success {
+  background-color: #16a34a !important; /* emerald-600 */
+  color: #ffffff !important;
+}
+.toast.text-bg-danger {
+  background-color: #dc2626 !important; /* red-600 */
+  color: #ffffff !important;
+}
+.toast.text-bg-info {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #ffffff !important;
+}
+.toast .btn-close {
+  filter: invert(1) grayscale(100%); /* ensure visible on colored backgrounds */
+}
+
+/* Sortable table headers */
+.th-sortable { user-select: none; }
+.th-sortable > span { vertical-align: middle; }
+.th-sortable .sort-icon { opacity: .5; font-size: .9em; vertical-align: middle; transition: opacity .15s ease; }
+.th-sortable:hover .sort-icon { opacity: .8; }
+.th-sortable.sorted-asc .sort-icon,
+.th-sortable.sorted-desc .sort-icon { opacity: 1; }
+
+/* Column alignment is handled by fixed column widths in views; keep icons inline */
+
+/* Product description: justify text and clamp height */
+.product-desc {
+  text-align: justify;
+  line-height: 1.2;
+  /* Clamp to 3 lines while keeping cross-browser reasonable fallback */
+  max-height: 3.6em; /* 3 * line-height */
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-clamp: 3;
+}

@@ -1,0 +1,72 @@
+@model Management.Admin.Controllers.AccountController.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Management.Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Management.Admin.styles.css" asp-append-version="true" />
+    <style>
+        body { background-color: #f8f9fa; }
+        .auth-wrapper { min-height: 100vh; display: flex; align-items: center; }
+    </style>
+    <base href="/" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+</head>
+<body>
+    <div class="container auth-wrapper py-5">
+        <div class="row justify-content-center w-100">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <h1 class="h4 text-center mb-4">Sign in</h1>
+                        <form asp-action="Login" method="post" novalidate>
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" asp-for="ReturnUrl" />
+
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                            <div class="mb-3">
+                                <label asp-for="Email" class="form-label"></label>
+                                <input asp-for="Email" class="form-control" autocomplete="username" />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Password" class="form-label"></label>
+                                <input asp-for="Password" type="password" class="form-control" autocomplete="current-password" />
+                                <span asp-validation-for="Password" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input asp-for="RememberMe" class="form-check-input" />
+                                <label class="form-check-label" asp-for="RememberMe"></label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">Login</button>
+                        </form>
+                    </div>
+                </div>
+                <p class="text-center text-muted mt-3 mb-0">&copy; @DateTime.Now.Year Management</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <partial name="_ValidationScriptsPartial" />
+    
+    <!-- Optional redirect back to home link -->
+    <div class="text-center mt-3">
+        <a class="text-decoration-none" asp-controller="Home" asp-action="Index">Back to Home</a>
+    </div>
+    
+    </body>
+    </html>
